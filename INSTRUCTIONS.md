@@ -16,7 +16,7 @@ En este manual, no asumimos que sepas nada sobre electrónica o lenguaje ensambl
 4. [Capítulo 3: Segundo Grupo - Estructuras de Control y Lógica de Bits](#capítulo-3-segundo-grupo---estructuras-de-control-y-lógica-de-bits)
 5. [Capítulo 4: Tercer Grupo - Operando la Pila (Stack) y Funciones](#capítulo-4-tercer-grupo---operando-la-pila-stack-y-funciones)
 6. [Capítulo 5: Desafío Avanzado - Operaciones de 16 Bits en un CPU de 8 Bits](#capítulo-5-desafío-avanzado---operaciones-de-16-bits-en-un-cpu-de-8-bits)
-
+7. [Capítulo 6: Extensión de Hardware - Coprocesador Matemático de Punto Flotante (FPU IEEE 754)](#capítulo-6-extensión-de-hardware---coprocesador-matemático-de-punto-flotante-fpu-ieee-754)
 ---
 
 ## Introducción: Del Alto Nivel al Bajo Nivel
@@ -469,3 +469,63 @@ HLT
 ¡Felicidades! Has completado el recorrido completo por el funcionamiento interno del microprocesador. Ahora tienes la capacidad intelectual y práctica de diseñar programas de gran rendimiento, depurar flujos paso a paso y, lo más importante, comprender exactamente cómo interactúa el software de alto nivel con el hardware subyacente.
 
 **¡Es hora de experimentar en el simulador!**
+---
+
+## Capítulo 6: Extensión de Hardware - Coprocesador Matemático de Punto Flotante (FPU IEEE 754)
+
+Los procesadores clásicos de 8 bits carecen de circuitería integrada para procesar directamente números decimales o reales[cite: 7]. Para resolver esta limitación física, se integra un **Coprocesador Matemático (FPU)** compatible con el estándar **IEEE 754 de 32 bits (precisión simple)**, el cual se comunica con el Intel 8080 a través del bus de Entrada/Salida (**I/O Ports**)[cite: 2].
+
+### 6.1 Arquitectura de Comunicación y Puertos I/O
+La CPU interactúa con la FPU mediante las instrucciones nativas de bus `IN` y `OUT`[cite: 2]:
+
+* **Puerto 40H (Control / Estado):**
+  * **Escritura (`OUT 40H`):** Envía el código de operación (*opcode*) matemático que la FPU debe ejecutar (`01H`: Suma `FADD`, `02H`: Resta `FSUB`, `03H`: Multiplicación `FMUL`, `04H`: División `FDIV`)[cite: 2].
+  * **Lectura (`IN 40H`):** Consulta el byte de estado de la FPU (`00H`: Operación normal, `01H`: Error de división por cero, `02H`: Desbordamiento/Overflow)[cite: 2].
+* **Puerto 41H (Canal Serie de Datos):**
+  * Dado que el bus de datos del 8080 es de 8 bits y un número IEEE 754 ocupa 32 bits, los operandos entran y salen en ráfagas secuenciales de **4 bytes** (formato Little Endian: desde el byte menos significativo hasta el más significativo)[cite: 2, 7].
+
+### 6.2 Banco de Registros Internos de la FPU
+El coprocesador cuenta con su propia pila de datos desacoplada de la ALU principal[cite: 2]:
+* **`ST0` (Top / Acumulador principal):** Almacena el valor recién cargado o el resultado numérico obtenido[cite: 2].
+* **`ST1` (Registro B / Secundario):** Almacena el operando previo tras desplazarse la pila[cite: 2].
+
+### 6.3 Ejemplo Práctico de Validación (Suma: 2.5 + 3.0 = 5.5)
+* **Codificación IEEE 754:**
+  * 2.5f equivale a `40200000H` (Bytes transferidos secuencialmente: `00H`, `00H`, `20H`, `40H`)[cite: 2, 3].
+  * 3.0f equivale a `40400000H` (Bytes transferidos secuencialmente: `00H`, `00H`, `40H`, `40H`)[cite: 2, 3].
+* **Resultado obtenido (5.5f):** `40B00000H` (Bytes recibidos: `00H`, `00H`, `B0H`, `40H`)[cite: 2, 3].
+
+; --- PROGRAMA DE SUMA EN PUNTO FLOTANTE CON FPU ---
+ORG 0000H
+
+; 1. Cargar 2.5f en ST0 mediante 4 escrituras sucesivas en 41H
+MVI A, 00H
+OUT 41H
+MVI A, 00H
+OUT 41H
+MVI A, 20H
+OUT 41H
+MVI A, 40H
+OUT 41H
+
+; 2. Cargar 3.0f (desplaza 2.5f a ST1 y coloca 3.0f en ST0)
+MVI A, 00H
+OUT 41H
+MVI A, 00H
+OUT 41H
+MVI A, 40H
+OUT 41H
+MVI A, 40H
+OUT 41H
+
+; 3. Enviar orden de suma (01H = FADD) al puerto de control 40H
+MVI A, 01H
+OUT 40H
+
+; 4. Leer el resultado de 32 bits byte a byte desde la FPU hacia el acumulador A
+IN 41H         ; Byte 0: 00H
+IN 41H         ; Byte 1: 00H
+IN 41H         ; Byte 2: B0H
+IN 41H         ; Byte 3: 40H (Acumulador A finaliza con 40H)
+
+HLT            ; Fin de la rutina
