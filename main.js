@@ -27,8 +27,24 @@ function updateUI() {
     document.getElementById('status-badge').textContent = cpu.halted ? 'Halted' : (runInterval ? 'Running' : 'Idle');
     document.getElementById('status-badge').style.backgroundColor = cpu.halted ? '#fee2e2' : (runInterval ? '#f0fdf4' : '#e2e8f0');
 
+    // Actualización del Coprocesador FPU
+    updateFPUUI();
+
     renderMemory();
     renderStack();
+}
+
+function updateFPUUI() {
+    if (typeof fpu === 'undefined') return;
+    const elRegA = document.getElementById('fpu-val-a');
+    const elRegB = document.getElementById('fpu-val-b');
+    const elOp = document.getElementById('fpu-last-op');
+    const elStatus = document.getElementById('fpu-status');
+
+    if (elRegA) elRegA.textContent = Number.isFinite(fpu.regA) ? fpu.regA.toFixed(4) : fpu.regA.toString();
+    if (elRegB) elRegB.textContent = Number.isFinite(fpu.regB) ? fpu.regB.toFixed(4) : fpu.regB.toString();
+    if (elOp) elOp.textContent = fpu.lastOp;
+    if (elStatus) elStatus.textContent = '0x' + fpu.status.toString(16).toUpperCase().padStart(2, '0');
 }
 
 function renderStack() {
@@ -163,6 +179,9 @@ document.getElementById('btn-reset').addEventListener('click', () => {
         runInterval = null;
     }
     cpu.reset();
+    if (typeof fpu !== 'undefined') {
+        fpu.reset();
+    }
 
     // Clear assembler output
     const output = document.getElementById('assembler-output');

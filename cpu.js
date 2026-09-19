@@ -167,7 +167,7 @@ class Intel8080 {
                 const res = (val - 1) & 0xFF;
                 this.setRegByCode(reg, res);
                 this.updateFlags(res);
-                this.flags.ac = !((res & 0x0F) === 0x0F); // Equivalent to "not (borrow out of low nibble)"
+                this.flags.ac = !((res & 0x0F) === 0x0F);
             } else {
                 const res = (val + 1) & 0xFF;
                 this.setRegByCode(reg, res);
@@ -265,9 +265,21 @@ class Intel8080 {
             case 0x37: this.flags.cy = true; break; // STC
             case 0x3F: this.flags.cy = !this.flags.cy; break; // CMC
 
-            // Special
-            case 0xDB: this.fetch(); break; // IN (Ignored for now)
-            case 0xD3: this.fetch(); break; // OUT (Ignored for now)
+            // Special (I/O conectada al coprocesador FPU)
+            case 0xDB: { // IN port
+                const port = this.fetch();
+                if (typeof fpu !== 'undefined' && (port === 0x40 || port === 0x41)) {
+                    this.registers.a = fpu.readPort(port);
+                }
+                break;
+            }
+            case 0xD3: { // OUT port
+                const port = this.fetch();
+                if (typeof fpu !== 'undefined' && (port === 0x40 || port === 0x41)) {
+                    fpu.writePort(port, this.registers.a);
+                }
+                break;
+            }
             case 0xFB: break; // EI
             case 0xF3: break; // DI
         }
@@ -292,8 +304,6 @@ class Intel8080 {
             case 2: // SUB
                 res = this.registers.a - val;
                 this.flags.cy = res < 0;
-                // Intel 8080 logic for auxiliary carry in subtraction:
-                // AC is calculated by adding the 4-bit inverted value plus 1
                 this.flags.ac = ((this.registers.a & 0x0F) + ((~val) & 0x0F) + 1) > 0x0F;
                 this.registers.a = res & 0xFF;
                 break;
@@ -301,14 +311,13 @@ class Intel8080 {
                 const b = this.flags.cy ? 1 : 0;
                 res = this.registers.a - val - b;
                 this.flags.cy = res < 0;
-                // Low-level addition logic: A + ~val + ~b. ~b is 1 if b=0, and 0 if b=1.
                 this.flags.ac = ((this.registers.a & 0x0F) + ((~val) & 0x0F) + (b ? 0 : 1)) > 0x0F;
                 this.registers.a = res & 0xFF;
                 break;
             case 4: // ANA
                 res = this.registers.a & val;
                 this.flags.cy = false;
-                this.flags.ac = ((this.registers.a | val) & 0x08) !== 0; // 8080 logic
+                this.flags.ac = ((this.registers.a | val) & 0x08) !== 0;
                 this.registers.a = res;
                 break;
             case 5: // XRA

@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Intel 8080 Emulator & Assembler</title>
+    <title>Intel 8080 Emulator & Assembler + FPU</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header>
         <div class="header-container">
             <h1>Intel 8080 Emulator & Assembler</h1>
-            <span class="version-badge">Version 2.1</span>
+            <span class="version-badge">Version 2.1 + FPU</span>
         </div>
     </header>
 
@@ -70,17 +70,46 @@ HLT"></textarea>
                     <div class="card flags">
                         <h3>Flags</h3>
                         <div class="flags-row">
-                            <div class="flag-box" title="Sign Flag (Signo): Se activa (1) si el bit más significativo (bit 7) del resultado es 1, indicando un número negativo."><span>S</span><div id="flag-s">0</div></div>
-                            <div class="flag-box" title="Zero Flag (Cero): Se activa (1) si el resultado de la última operación fue exactamente cero."><span>Z</span><div id="flag-z">0</div></div>
-                            <div class="flag-box" title="Auxiliary Carry Flag (Acarreo Auxiliar): Se activa (1) si hay un acarreo del bit 3 al bit 4 en una suma, o si no hay préstamo en una resta. Es utilizado por DAA."><span>AC</span><div id="flag-ac">0</div></div>
-                            <div class="flag-box" title="Parity Flag (Paridad): Se activa (1) si el resultado tiene un número par de bits en 1."><span>P</span><div id="flag-p">0</div></div>
-                            <div class="flag-box" title="Carry Flag (Acarreo): Se activa (1) si la última operación generó un acarreo (en suma) o un préstamo (en resta) fuera del bit más significativo."><span>CY</span><div id="flag-cy">0</div></div>
+                            <div class="flag-box" title="Sign Flag"><span>S</span><div id="flag-s">0</div></div>
+                            <div class="flag-box" title="Zero Flag"><span>Z</span><div id="flag-z">0</div></div>
+                            <div class="flag-box" title="Auxiliary Carry Flag"><span>AC</span><div id="flag-ac">0</div></div>
+                            <div class="flag-box" title="Parity Flag"><span>P</span><div id="flag-p">0</div></div>
+                            <div class="flag-box" title="Carry Flag"><span>CY</span><div id="flag-cy">0</div></div>
                         </div>
                     </div>
 
                     <div class="card stack">
                         <h3>Stack View (around SP)</h3>
                         <div id="stack-table"></div>
+                    </div>
+
+                    <!-- Panel del Coprocesador Matemático (FPU) -->
+                    <div class="card fpu" style="margin-top: 15px; border-top: 3px solid #007acc; padding: 12px; background: #fafbfc;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: #007acc; display: flex; justify-content: space-between;">
+                            <span>FPU Coprocessor</span>
+                            <span style="font-size: 0.75rem; color: #666;">IEEE 754</span>
+                        </h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
+                            <div style="background: #fff; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                                <div style="color: #888; font-size: 0.75rem;">ST0 (Reg A)</div>
+                                <div id="fpu-val-a" style="font-weight: bold; color: #111;">0.0000</div>
+                            </div>
+                            <div style="background: #fff; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                                <div style="color: #888; font-size: 0.75rem;">ST1 (Reg B)</div>
+                                <div id="fpu-val-b" style="font-weight: bold; color: #111;">0.0000</div>
+                            </div>
+                            <div style="background: #fff; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                                <div style="color: #888; font-size: 0.75rem;">Last Op</div>
+                                <div id="fpu-last-op" style="font-weight: bold; color: #007acc;">IDLE</div>
+                            </div>
+                            <div style="background: #fff; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                                <div style="color: #888; font-size: 0.75rem;">Status (0x40)</div>
+                                <div id="fpu-status" style="font-family: monospace; font-weight: bold;">0x00</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px; font-size: 0.75rem; color: #666; text-align: center;">
+                            Ports: <code>40H</code> (CMD/STATUS) | <code>41H</code> (DATA)
+                        </div>
                     </div>
                 </div>
 
@@ -96,6 +125,7 @@ HLT"></textarea>
         </section>
     </main>
 
+    <script src="fpu.js"></script>
     <script src="cpu.js"></script>
     <script src="assembler.js"></script>
     <script src="main.js"></script>
