@@ -471,6 +471,8 @@ HLT
 **¡Es hora de experimentar en el simulador!**
 ---
 
+---
+
 ## Capítulo 6: Extensión de Hardware - Coprocesador Matemático de Punto Flotante (FPU IEEE 754)
 
 Los procesadores clásicos de 8 bits carecen de circuitería integrada para procesar directamente números decimales o reales[cite: 7]. Para resolver esta limitación física, se integra un **Coprocesador Matemático (FPU)** compatible con el estándar **IEEE 754 de 32 bits (precisión simple)**, el cual se comunica con el Intel 8080 a través del bus de Entrada/Salida (**I/O Ports**)[cite: 2].
@@ -495,6 +497,7 @@ El coprocesador cuenta con su propia pila de datos desacoplada de la ALU princip
   * 3.0f equivale a `40400000H` (Bytes transferidos secuencialmente: `00H`, `00H`, `40H`, `40H`)[cite: 2, 3].
 * **Resultado obtenido (5.5f):** `40B00000H` (Bytes recibidos: `00H`, `00H`, `B0H`, `40H`)[cite: 2, 3].
 
+```assembly
 ; --- PROGRAMA DE SUMA EN PUNTO FLOTANTE CON FPU ---
 ORG 0000H
 
@@ -529,3 +532,4 @@ IN 41H         ; Byte 2: B0H
 IN 41H         ; Byte 3: 40H (Acumulador A finaliza con 40H)
 
 HLT            ; Fin de la rutina
+```
